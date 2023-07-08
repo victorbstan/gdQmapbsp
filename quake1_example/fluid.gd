@@ -1,11 +1,13 @@
 extends Area3D
 class_name QmapbspQuakeFluidVolume
 
-func _damage() -> int : return 0
-func _liquid_type() -> StringName : return &'water'
-func _decay_time() -> float : return 0 # in seconds
+func damage() -> int : return 1
+func liquid_type() -> StringName : return &'water'
+func duration() -> float : return 0 # damage effect lasts in seconds
 
 func _ready() :
+	set_collision_layer_value(1, false)
+	set_collision_layer_value(3, true)
 	body_entered.connect(_bo_en)
 	body_exited.connect(_bo_ex)
 	
