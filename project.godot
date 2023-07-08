@@ -12,7 +12,7 @@ config_version=5
 
 config/name="gdQmapbsp-spyFPS"
 run/main_scene="res://quake1_example/hub.tscn"
-config/features=PackedStringArray("4.0", "Mobile")
+config/features=PackedStringArray("4.1", "Mobile")
 config/icon="res://icon.svg"
 
 [debug]
@@ -24,10 +24,11 @@ shapes/collision/contact_color=Color(1, 0.2, 0.101961, 0.8)
 
 [display]
 
-window/size/viewport_width=1280
-window/size/viewport_height=720
+window/size/viewport_width=2560
+window/size/viewport_height=1440
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
+window/stretch/scale=2.0
 
 [editor_plugins]
 
