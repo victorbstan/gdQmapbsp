@@ -172,9 +172,7 @@ func move_noclip(delta : float) -> void :
 	friction(delta)
 	accelerate(max_speed, delta)
 	translate(velocity * delta)
-<<<<<<< HEAD
 	_watercoltest()
-=======
 	
 
 func _ceiling_test() :
@@ -206,7 +204,6 @@ func _stairs(delta : float) :
 
 	_watercoltest()
 
->>>>>>> player-update
 
 func _physics_process(delta : float) -> void :
 	if Input.get_mouse_mode() != Input.MOUSE_MODE_CAPTURED :
