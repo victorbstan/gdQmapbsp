@@ -150,8 +150,8 @@ func move_ground(delta : float) -> void :
 	move_and_slide()
 	_coltest()
 	_ceiling_test()
-	
-	
+
+
 func move_air(delta : float) -> void :
 	accelerate(max_air_speed, delta)
 	_stairs(delta)
@@ -396,6 +396,7 @@ func _process_liquid_hurt(delta) :
 
 
 #########################################
+
 
 func toggle_noclip() :
 	noclip = !noclip
