@@ -30,7 +30,8 @@ var noclip : bool = false
 @onready var head : Node3D = $around/head
 @onready var camera : Camera3D = $around/head/cam
 @onready var staircast : ShapeCast3D = $staircast
-@onready var jump : AudioStreamPlayer3D = $jump
+@onready var space_state := get_world_3d().direct_space_state
+@onready var sound : AudioStreamPlayer3D = $sound
 @onready var origin : Node3D = $origin
 
 var wishdir : Vector3
@@ -85,13 +86,13 @@ func _ready() :
 	# setup query points
 	low_level.set_collide_with_areas(true)
 	low_level.set_collide_with_bodies(false)
-	low_level.set_collision_mask(pow(2, 3-1)) # 3rd layer is LIQUID
+	low_level.set_collision_mask(pow(2, 2-1)) # 2rd layer is bsp_liquid
 	mid_level.set_collide_with_areas(true)
 	mid_level.set_collide_with_bodies(false)
-	mid_level.set_collision_mask(pow(2, 3-1)) # 3rd layer is LIQUID
+	mid_level.set_collision_mask(pow(2, 2-1)) # 2rd layer is bsp_liquid
 	eye_level.set_collide_with_areas(true)
 	eye_level.set_collide_with_bodies(false)
-	eye_level.set_collision_mask(pow(2, 3-1)) # 3rd layer is LIQUID
+	eye_level.set_collision_mask(pow(2, 2-1)) # 2rd layer is bsp_liquid
 	
 	
 func hurt(type: StringName, amount: int, duration: float) :
@@ -171,7 +172,41 @@ func move_noclip(delta : float) -> void :
 	friction(delta)
 	accelerate(max_speed, delta)
 	translate(velocity * delta)
+<<<<<<< HEAD
 	_watercoltest()
+=======
+	
+
+func _ceiling_test() :
+	staircast.target_position.y = _sc_height
+	staircast.force_shapecast_update()
+	if staircast.get_collision_count() == 0 :
+		staircast.target_position.y = -(_p_height - _sc_height)
+		staircast.force_shapecast_update()
+		if staircast.get_collision_count() > 0 and staircast.get_collision_normal(0).y >= 0.8 :
+			var height := staircast.get_collision_point(0).y - (global_position.y - _p_half_height)
+			if (height < stairstep) or (fluid and height < stairstep_liquid) : # step-over
+				position.y += height * step_buffer
+				smooth_y = -height * step_buffer # applied in _physics_process
+
+
+func _stairs(delta : float) :
+	var w := (velocity / max_speed) * Vector3(2.0, 0.0, 2.0) * delta
+	var ws := w * max_speed
+	
+	# increase size in horizontal movement direction
+	var shape : BoxShape3D = staircast.shape
+	shape.size = Vector3(
+		_sc_size.x + ws.length(), _sc_height, _sc_size.z + ws.length()
+	)
+	
+	staircast.target_position = Vector3(
+		ws.x, 0, ws.z
+	)
+
+	_watercoltest()
+
+>>>>>>> player-update
 
 func _physics_process(delta : float) -> void :
 	if Input.get_mouse_mode() != Input.MOUSE_MODE_CAPTURED :
@@ -225,7 +260,23 @@ func _physics_process(delta : float) -> void :
 		smooth_y /= step_buffer
 		around.position.y = smooth_y + _head_height
 		
-var ppqp_water : PhysicsPointQueryParameters3D
+		
+func _can_swim() -> bool :
+	if not fluid : return false
+	# check that both low-level (feet) and mid-level (waist) are in liquid at the same time
+	return _check_submerged_level(1) && _check_submerged_level(2)
+
+
+func _play_sound(s_type: StringName, force: bool = false) :
+	if not force and sound.is_playing() : return
+	
+	# access by convention: s_type + "_audio"
+	var psnd = get("%s_audio" % s_type).pick_random()
+	if psnd.is_empty() : return
+	sound.stream = viewer.hub.load_audio(psnd)
+	sound.play()
+
+
 func _coltest() -> void :
 	for i in get_slide_collision_count() :
 		var k := get_slide_collision(i)
@@ -240,7 +291,9 @@ func _coltest() -> void :
 				obj._player_touch(self, k.get_position(j), k.get_normal(j))
 				return
 	_watercoltest()
-		
+
+
+var ppqp_water : PhysicsPointQueryParameters3D
 func _watercoltest() -> void :
 	# water touch test
 	if !ppqp_water :
@@ -254,7 +307,8 @@ func _watercoltest() -> void :
 	var arr := get_world_3d().direct_space_state.intersect_point(ppqp_water)
 	if !arr.is_empty() :
 		fluid = arr[0]["collider"]
-		
+
+
 func _input(event : InputEvent) -> void :
 	if Input.get_mouse_mode() != Input.MOUSE_MODE_CAPTURED :
 		return
@@ -270,12 +324,79 @@ func _input(event : InputEvent) -> void :
 		var hrot = head.rotation
 		hrot.x = clampf(hrot.x, -PI/2, PI/2)
 		head.rotation = hrot
-		
-#func _fluid_enter(f : QmapbspQuakeFluidVolume) :
-#	fluid = f
-#
-#func _fluid_exit(f : QmapbspQuakeFluidVolume) :
-#	if f == fluid : fluid = null
+
+
+func _check_submerged_level(level : int) -> bool :
+	if not fluid : return false
+	
+	match level :
+		1 :
+			low_level.position = global_position - _p_low_pos_diff
+			if space_state.intersect_point(low_level) : 
+				return true 
+			else : 
+				return false
+		2 : 
+			mid_level.position = global_position
+			if space_state.intersect_point(mid_level) : 
+				return true 
+			else : 
+				return false
+		3 :
+			eye_level.position = around.global_position
+			if space_state.intersect_point(eye_level) : 
+				return true 
+			else : 
+				return false
+		_ :
+			return false
+
+
+# return highest level of 0, 1, 2, 3 levels (none, low, halfway, eye-level)
+func _get_submerged_level() -> int :
+	# setup query points position
+	low_level.position = global_position - _p_low_pos_diff
+	mid_level.position = global_position
+	eye_level.position = around.global_position
+	# query space
+	if space_state.intersect_point(eye_level) : return 3
+	elif space_state.intersect_point(mid_level) : return 2
+	elif space_state.intersect_point(low_level) : return 1
+	else : return 0
+
+
+func _process_liquid_hurt(delta) :
+	if not fluid : return
+	
+	var prev_s_level = s_level
+	s_level = _get_submerged_level()
+	
+	# was fully submersed, now coming up for air
+	if prev_s_level == 3 and s_level < 3 :
+		# play gasping sound only if ~drowning
+		if (max_time_submerged - time_submerged) < 1:
+			_play_sound(&'air_gasp', true)
+	
+	match fluid.liquid_type() :
+		&'water' :  
+			if s_level == 3 : time_submerged += 1 * delta
+			else : time_submerged = 0
+			if time_submerged > max_time_submerged : # delay
+				time_submerged -= 1 # apply effect every 1 second
+				hurt(&'water', fluid.damage(), fluid.duration())
+		&'lava' : 
+			if s_level > 0 : time_submerged += 1 * delta
+			else : time_submerged = 0
+			if time_submerged > 0 :
+				time_submerged -= 1 # apply effect every 1 second
+				hurt(&'lava', fluid.damage() * s_level, fluid.duration())
+		&'slime' : 
+			if s_level > 0 : time_submerged += 1 * delta
+			else : time_submerged = 0
+			if time_submerged > 0 :
+				time_submerged -= 1 # apply effect every 1 second
+				hurt(&'slime', fluid.damage() * s_level, fluid.duration())
+
 
 #########################################
 
