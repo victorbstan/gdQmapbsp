@@ -1,0 +1,89 @@
+[gd_scene load_steps=8 format=3 uid="uid://bfrpdkolpjr3g"]
+
+[ext_resource type="Script" path="res://quake1_example/viewer.gd" id="1_vs1gv"]
+[ext_resource type="PackedScene" uid="uid://dvlurm3ntglha" path="res://quake1_example/console.tscn" id="2_qwu1n"]
+[ext_resource type="Script" path="res://quake1_example/hud.gd" id="2_tj87b"]
+[ext_resource type="Script" path="res://quake1_example/menu.gd" id="3_044qv"]
+[ext_resource type="Script" path="res://quake1_example/message.gd" id="5_6jblb"]
+[ext_resource type="Shader" path="res://quake1_example/viewer_fade.gdshader" id="5_upbmq"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_spi4i"]
+shader = ExtResource("5_upbmq")
+
+[node name="viewer" type="Control"]
+process_mode = 3
+texture_filter = 1
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_vs1gv")
+
+[node name="loading" type="TextureRect" parent="."]
+self_modulate = Color(0.5, 0.5, 0.5, 1)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="loading" type="TextureRect" parent="loading"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+grow_horizontal = 2
+grow_vertical = 2
+scale = Vector2(3, 3)
+
+[node name="hud" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("2_tj87b")
+
+[node name="console" parent="." instance=ExtResource("2_qwu1n")]
+layout_mode = 1
+
+[node name="menu" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+pivot_offset = Vector2(160, 0)
+script = ExtResource("3_044qv")
+
+[node name="fade" type="ColorRect" parent="menu"]
+material = SubResource("ShaderMaterial_spi4i")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="message" type="Control" parent="."]
+process_mode = 1
+layout_mode = 1
+anchor_left = 0.5
+anchor_top = 0.4
+anchor_right = 0.5
+anchor_bottom = 0.4
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("5_6jblb")
+
+[node name="talk" type="AudioStreamPlayer" parent="message"]
+
+[node name="life" type="Timer" parent="message"]
+wait_time = 2.0
